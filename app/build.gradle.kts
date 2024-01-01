@@ -6,7 +6,6 @@ plugins {
     id("kotlin-kapt")
     id("kotlin-parcelize")
 }
-
 setupApp()
 
 android {
