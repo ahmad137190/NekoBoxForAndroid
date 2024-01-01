@@ -1,4 +1,5 @@
 #!/bin/bash
+  export ANDROID_HOME="/Volumes/Untitled/others/sdk"
 
 if [ -z "$ANDROID_HOME" ]; then
   if [ -d "$HOME/Android/Sdk" ]; then
