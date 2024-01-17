@@ -240,11 +240,11 @@
     <color name="material_red_300">#E57373</color>
     <color name="material_red_400">#EF5350</color>
     <color name="material_red_50">#FFEBEE</color>
-    <color name="material_red_500">#F44336</color>
-    <color name="material_red_600">#E53935</color>
-    <color name="material_red_700">#D32F2F</color>
-    <color name="material_red_800">#C62828</color>
-    <color name="material_red_900">#B71C1C</color>
+    <color name="material_red_500">#e6123d</color>
+    <color name="material_red_600">#E3221D</color>
+    <color name="material_red_700">#D31919</color>
+    <color name="material_red_800">#C11313</color>
+    <color name="material_red_900">#B60D0D</color>
     <color name="material_red_accent_100">#FF8A80</color>
     <color name="material_red_accent_200">#FF5252</color>
     <color name="material_red_accent_400">#FF1744</color>

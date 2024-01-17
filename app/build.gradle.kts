@@ -5,6 +5,8 @@ plugins {
     id("kotlin-android")
     id("kotlin-kapt")
     id("kotlin-parcelize")
+    id("com.google.gms.google-services")
+
 }
 setupApp()
 
@@ -74,4 +76,9 @@ dependencies {
     kapt("com.github.MatrixDev.Roomigrant:RoomigrantCompiler:0.3.4")
 
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")
+
+    implementation("com.google.firebase:firebase-messaging-ktx:23.1.2")
+    implementation ("com.google.firebase:firebase-bom:31.5.0")
+    implementation ("com.google.firebase:firebase-analytics:21.2.2")
+    implementation ("com.google.firebase:firebase-core:21.1.1")
 }

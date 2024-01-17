@@ -9,7 +9,12 @@
     android:clickable="true"
     android:focusable="true"
     app:cardElevation="2dp">
-
+    <LinearLayout
+        android:id="@+id/content_lin1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:focusable="true"
+        android:orientation="vertical">
     <LinearLayout
         android:id="@+id/content_lin"
         android:layout_width="match_parent"
@@ -17,14 +22,14 @@
         android:focusable="true"
         android:orientation="horizontal">
 
-        <LinearLayout
+   <!--     <LinearLayout
             android:id="@+id/selected_view"
             android:layout_width="4dp"
             android:layout_height="match_parent"
             android:background="?selectedColorPrimary"
             android:orientation="horizontal"
             android:visibility="invisible"
-            tools:visibility="visible" />
+            tools:visibility="visible" />-->
 
         <LinearLayout
 
@@ -58,7 +63,26 @@
                         android:textStyle="bold"
                         tools:text="@string/profile_name" />
                 </LinearLayout>
+                <TextView
+                    android:id="@+id/profile_expireDate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:text=""
 
+                    android:layout_gravity="center_vertical"
+                    />
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:id="@+id/testConnect"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="top"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/edit"
+                    android:focusable="true"
+                    android:padding="6dp"
+                    app:srcCompat="@drawable/ic_test1" />
                 <androidx.appcompat.widget.AppCompatImageView
                     android:id="@+id/edit"
                     android:layout_width="wrap_content"
@@ -67,7 +91,7 @@
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="@string/edit"
                     android:focusable="true"
-                    android:padding="12dp"
+                    android:padding="6dp"
                     app:srcCompat="@drawable/ic_image_edit" />
 
                 <LinearLayout
@@ -84,7 +108,7 @@
                         android:id="@+id/share_layer"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:padding="12dp">
+                        android:padding="6dp">
 
                         <androidx.appcompat.widget.AppCompatImageView
                             android:id="@+id/shareIcon"
@@ -103,7 +127,7 @@
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="@string/delete"
                     android:focusable="true"
-                    android:padding="12dp"
+                    android:padding="6dp"
                     android:visibility="gone"
                     app:srcCompat="@drawable/ic_action_delete" />
 
@@ -113,7 +137,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:paddingStart="12dp"
+                android:paddingStart="6dp"
                 android:paddingEnd="8dp"
                 android:paddingBottom="4dp"
                 android:visibility="gone"
@@ -146,7 +170,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:paddingStart="12dp"
+                android:paddingStart="6dp"
                 android:paddingEnd="8dp"
                 android:paddingBottom="12dp">
 
@@ -166,7 +190,7 @@
                     android:id="@+id/profile_status"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="4dp"
+                    android:layout_marginStart="6dp"
                     android:textAppearance="?android:attr/textAppearanceSmall"
                     android:textColor="?attr/accentOrTextSecondary" />
 
@@ -175,5 +199,13 @@
         </LinearLayout>
 
     </LinearLayout>
-
+    <LinearLayout
+        android:id="@+id/selected_view"
+        android:layout_height="4dp"
+        android:layout_width="match_parent"
+        android:background="?selectedColorPrimary"
+        android:orientation="horizontal"
+        android:visibility="invisible"
+        tools:visibility="visible" />
+</LinearLayout>
 </com.google.android.material.card.MaterialCardView>

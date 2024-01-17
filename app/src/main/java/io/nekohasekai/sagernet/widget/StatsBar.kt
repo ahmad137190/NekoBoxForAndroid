@@ -12,13 +12,19 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.whenStarted
 import com.google.android.material.bottomappbar.BottomAppBar
 import io.nekohasekai.sagernet.R
+import io.nekohasekai.sagernet.SagerNet
 import io.nekohasekai.sagernet.bg.BaseService
 import io.nekohasekai.sagernet.database.DataStore
+import io.nekohasekai.sagernet.database.ProfileManager
+import io.nekohasekai.sagernet.database.ProxyEntity
+import io.nekohasekai.sagernet.database.SagerDatabase
 import io.nekohasekai.sagernet.ktx.*
+import io.nekohasekai.sagernet.ui.ConfigurationFragment
 import io.nekohasekai.sagernet.ui.MainActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.ArrayList
 
 class StatsBar @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null,
@@ -128,6 +134,12 @@ class StatsBar @JvmOverloads constructor(
         setStatus(app.getText(R.string.connection_test_testing))
         runOnDefaultDispatcher {
             try {
+                ///////////////////////////
+                println("ahmad@ refresh recycle")
+                val result = SagerDatabase.proxyDao.getByGroup(DataStore.currentGroupId())
+                ProfileManager.updateProfile(result)
+                ///////////////////////////
+
                 val elapsed = activity.urlTest()
                 onMainDispatcher {
                     isEnabled = true
@@ -153,6 +165,28 @@ class StatsBar @JvmOverloads constructor(
                             R.string.connection_test_error, e.readableMessage
                         )
                     ).show()
+
+
+                    ////// log Hologate///////
+                    SagerNet.stopService()
+                    delay(4000) // wait for service stop
+                    val fragment = ConfigurationFragment()
+
+                    val entities = ArrayList<ProxyEntity>()
+                    val group = DataStore.currentGroup()
+                    val profilesUnfiltered = SagerDatabase.proxyDao.getByGroup(group.id)
+                    val ent: ProxyEntity? = profilesUnfiltered.find { it.id == DataStore.currentProfile }
+                    if (ent != null) {
+                        entities.add(ent)
+                    }
+                    fragment.LogHologateFromServer(
+                        // "https://hologate.plus/api/log/connection",
+                        "",
+                        entities,
+                        activity
+                    )
+                    //  fragment.urlTest(entities, true, null,activity)
+                    ////// log///////
                 }
             }
         }

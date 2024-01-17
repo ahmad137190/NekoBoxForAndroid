@@ -85,7 +85,7 @@ class BackupFragment : NamedFragment(R.layout.layout_backup) {
                 )
                 app.cacheDir.mkdirs()
                 val cacheFile = File(
-                    app.cacheDir, "nekobox_backup_${Date().toLocaleString()}.json"
+                    app.cacheDir, "hologate_backup_${Date().toLocaleString()}.json"
                 )
                 cacheFile.writeText(content)
                 onMainDispatcher {

@@ -72,7 +72,7 @@ object ProfileManager {
         }
     }
 
-    suspend fun createProfile(groupId: Long, bean: AbstractBean): ProxyEntity {
+    suspend fun createProfile1(groupId: Long, bean: AbstractBean): ProxyEntity {
         bean.applyDefaultValues()
 
         val profile = ProxyEntity(groupId = groupId).apply {
@@ -84,7 +84,42 @@ object ProfileManager {
         iterator { onAdd(profile) }
         return profile
     }
+    suspend fun createProfile(groupId: Long, bean: AbstractBean): ProxyEntity {
+        bean.applyDefaultValues()
 
+        val profile = ProxyEntity(groupId = groupId).apply {
+            id = 0
+            putBean(bean)
+            userOrder = SagerDatabase.proxyDao.nextOrder(groupId) ?: 1
+        }
+        var list: List<ProxyEntity> =   SagerDatabase.proxyDao.getAll()
+        var result: List<ProxyEntity> = list.filter {
+            it.displayName().lowercase()
+                .contains(profile.displayName().lowercase()) &&
+                    it.displayType().lowercase()
+                        .contains(profile.displayType().lowercase()) &&
+                    it.displayAddress().lowercase()
+                        .contains(profile.displayAddress().lowercase())
+        }
+        if (result.isEmpty()) {
+            profile.id = SagerDatabase.proxyDao.addProxy(profile)
+            iterator { onAdd(profile) }
+        }
+        else{
+            //profile
+//             SagerDatabase.proxyDao.deleteProxy(profile)
+//             SagerDatabase.proxyDao.addProxy(profile)
+            //  SagerDatabase.proxyDao.updateProxy(profile)
+            //  profile.sshBean!!.expireDate = "2023-04-10"
+            val ddd=  result[0]
+            ddd.putBean(bean)
+            //ddd.sshBean!!.expireDate = "2023-04-09"
+            iterator { updateProfile(ddd) }
+
+        }
+
+        return profile
+    }
     suspend fun updateProfile(profile: ProxyEntity) {
         SagerDatabase.proxyDao.updateProxy(profile)
         iterator { onUpdated(profile, false) }

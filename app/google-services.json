@@ -1,0 +1,126 @@
+{
+  "project_info": {
+    "project_number": "155835760661",
+    "project_id": "hologate-1f214",
+    "storage_bucket": "hologate-1f214.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:155835760661:android:14cf79bda05bedd5300e1c",
+        "android_client_info": {
+          "package_name": "holo.gate"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "155835760661-d7df8t9bofc539ikcff8qggu0j2k9d8f.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3ZXFBTeC31oaBJ98dFrQl6b88Ty5Uuos"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "155835760661-d7df8t9bofc539ikcff8qggu0j2k9d8f.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:155835760661:android:cfe504a532222475300e1c",
+        "android_client_info": {
+          "package_name": "holo.gate.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "155835760661-d7df8t9bofc539ikcff8qggu0j2k9d8f.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3ZXFBTeC31oaBJ98dFrQl6b88Ty5Uuos"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "155835760661-d7df8t9bofc539ikcff8qggu0j2k9d8f.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:155835760661:android:f4f398a0831e993e300e1c",
+        "android_client_info": {
+          "package_name": "holo.gate.app.debug"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "155835760661-d7df8t9bofc539ikcff8qggu0j2k9d8f.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3ZXFBTeC31oaBJ98dFrQl6b88Ty5Uuos"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "155835760661-d7df8t9bofc539ikcff8qggu0j2k9d8f.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:155835760661:android:c4315e1710ebc88c300e1c",
+        "android_client_info": {
+          "package_name": "holo.gate.debug"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "155835760661-d7df8t9bofc539ikcff8qggu0j2k9d8f.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3ZXFBTeC31oaBJ98dFrQl6b88Ty5Uuos"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "155835760661-d7df8t9bofc539ikcff8qggu0j2k9d8f.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

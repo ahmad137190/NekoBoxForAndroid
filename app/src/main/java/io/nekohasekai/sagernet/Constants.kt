@@ -3,6 +3,12 @@ package io.nekohasekai.sagernet
 const val CONNECTION_TEST_URL = "http://cp.cloudflare.com/"
 
 object Key {
+    const val LANGUAGE_MODE = "languageMode"
+    const val MODE_FA = "fa"
+    const val MODE_EN = "en"
+    const val DIRECT_DNS_USE_SYSTEM = "directDnsUseSystem"
+    const val KEY_HASH = "qgotvgfderbnjuygvcdszxcsawerinbv"
+    const val SHOW_AUTO_GET_LIST_HOLOGATE = "showGroupInAutoGetListHoloGate"
 
     const val DB_PUBLIC = "configuration.db"
     const val DB_PROFILE = "sager_net.db"
@@ -184,5 +190,5 @@ object Action {
     const val RELOAD = "io.nekohasekai.sagernet.RELOAD"
 
     // const val SWITCH_WAKE_LOCK = "io.nekohasekai.sagernet.SWITCH_WAKELOCK"
-    const val RESET_UPSTREAM_CONNECTIONS = "moe.nb4a.RESET_UPSTREAM_CONNECTIONS"
+    const val RESET_UPSTREAM_CONNECTIONS = "holo.gate.app.RESET_UPSTREAM_CONNECTIONS"
 }

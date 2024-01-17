@@ -336,15 +336,15 @@ class GroupFragment : ToolbarFragment(R.layout.layout_group),
             }
 
             when (item.itemId) {
-                R.id.action_universal_qr -> {
-                    QRCodeDialog(
-                        proxyGroup.toUniversalLink(), proxyGroup.displayName()
-                    ).showAllowingStateLoss(parentFragmentManager)
-                }
+//                R.id.action_universal_qr -> {
+//                    QRCodeDialog(
+//                        proxyGroup.toUniversalLink(), proxyGroup.displayName()
+//                    ).showAllowingStateLoss(parentFragmentManager)
+//                }
 
-                R.id.action_universal_clipboard -> {
-                    export(proxyGroup.toUniversalLink())
-                }
+//                R.id.action_universal_clipboard -> {
+//                    export(proxyGroup.toUniversalLink())
+//                }
 
                 R.id.action_export_clipboard -> {
                     runOnDefaultDispatcher {
@@ -357,10 +357,12 @@ class GroupFragment : ToolbarFragment(R.layout.layout_group),
                     }
                 }
 
-                R.id.action_export_file -> {
+//                R.id.action_export_file -> {
+//                    startFilesForResult(exportProfiles, "profiles_${proxyGroup.displayName()}.txt")
+//                }
+                R.id.action_export -> {
                     startFilesForResult(exportProfiles, "profiles_${proxyGroup.displayName()}.txt")
                 }
-
                 R.id.action_clear -> {
                     MaterialAlertDialogBuilder(requireContext()).setTitle(R.string.confirm)
                         .setMessage(R.string.clear_profiles_message)

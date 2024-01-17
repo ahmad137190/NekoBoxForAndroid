@@ -17,15 +17,21 @@ import moe.matsuri.nb4a.utils.WebViewUtil
 
 // Fragment必须有一个无参public的构造函数，否则在数据恢复的时候，会报crash
 
-class WebviewFragment : ToolbarFragment(R.layout.layout_webview), Toolbar.OnMenuItemClickListener {
+class WebviewFragment(url: String) : ToolbarFragment(R.layout.layout_webview), Toolbar.OnMenuItemClickListener {
 
     lateinit var mWebView: WebView
+    var _URL = url
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         // layout
+        if (_URL != "null") {
+        } else {
+            toolbar.setTitle(R.string.menu_dashboard)
+
+        }
         toolbar.setTitle(R.string.menu_dashboard)
         toolbar.inflateMenu(R.menu.yacd_menu)
         toolbar.setOnMenuItemClickListener(this)
@@ -48,7 +54,16 @@ class WebviewFragment : ToolbarFragment(R.layout.layout_webview), Toolbar.OnMenu
                 super.onPageFinished(view, url)
             }
         }
-        mWebView.loadUrl(DataStore.yacdURL)
+     //   mWebView.loadUrl(DataStore.yacdURL)
+        println("onResponse token   $_URL")
+
+        if (_URL != "null") {
+            mWebView.loadUrl(_URL)
+
+        } else {
+            mWebView.loadUrl(DataStore.yacdURL)
+
+        }
     }
 
     @SuppressLint("CheckResult")

@@ -3,26 +3,26 @@
     <item
         android:id="@+id/action_share_subscription"
         android:title="@string/share_subscription">
-        <menu>
+    <!--    <menu>
             <item
                 android:id="@+id/action_universal_clipboard"
                 android:title="@string/action_export_clipboard" />
             <item
                 android:id="@+id/action_universal_qr"
                 android:title="@string/share_qr_nfc" />
-        </menu>
+        </menu>-->
     </item>
     <item
         android:id="@+id/action_export"
-        android:title="@string/action_export">
-        <menu>
+        android:title="@string/action_export_file">
+ <!--       <menu>
             <item
                 android:id="@+id/action_export_clipboard"
                 android:title="@string/action_export_clipboard" />
             <item
                 android:id="@+id/action_export_file"
                 android:title="@string/action_export_file" />
-        </menu>
+        </menu>-->
     </item>
     <item
         android:id="@+id/action_clear"

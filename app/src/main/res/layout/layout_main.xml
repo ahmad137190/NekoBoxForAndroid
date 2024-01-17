@@ -44,7 +44,9 @@
             app:backgroundTint="?fabColorBackground"
             app:layout_anchor="@id/stats"
             app:pressedTranslationZ="6dp"
-            app:srcCompat="@drawable/ic_service_idle" />
+            app:srcCompat="@drawable/ic_service_idle"
+            app:maxImageSize="48dp"
+            />
 
         <io.nekohasekai.sagernet.widget.StatsBar
             android:id="@+id/stats"
@@ -53,7 +55,7 @@
             android:layout_gravity="bottom"
             android:fitsSystemWindows="true"
             android:nextFocusUp="@+id/fab"
-            app:backgroundTint="?colorMaterial300"
+            app:backgroundTint="?colorPrimary"
             app:contentInsetStart="0dp"
             app:hideOnScroll="true"
             app:layout_scrollFlags="enterAlways|scroll">

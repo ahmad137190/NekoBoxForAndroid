@@ -1,7 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="single"
+        android:id="@+id/profile1"
+        >
+        <item
+            android:id="@+id/nav_profile1"
+            android:icon="@drawable/ic_baseline_person_24"
+            android:title="@string/login_account"
+            android:state_checked="true"
 
+            />
+
+    </group>
     <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_login"
+            android:icon="@drawable/ic_baseline_person_24"
+            android:title="@string/login_account"
+            android:state_checked="true"
+
+            />
         <item
             android:id="@+id/nav_configuration"
             android:icon="@drawable/ic_action_description"
@@ -30,17 +48,17 @@
             android:id="@+id/nav_logcat"
             android:icon="@drawable/ic_baseline_bug_report_24"
             android:title="@string/menu_log" />
-        <item
+<!--        <item
             android:id="@+id/nav_traffic"
             android:icon="@drawable/ic_baseline_transform_24"
-            android:title="@string/menu_dashboard" />
+            android:title="@string/menu_dashboard" />-->
         <item
             android:id="@+id/nav_tools"
             android:icon="@drawable/baseline_construction_24"
             android:title="@string/menu_tools" />
     </group>
 
-    <group
+<!--    <group
         android:id="@+id/about"
         android:checkableBehavior="single">
         <item
@@ -55,6 +73,33 @@
             android:id="@+id/nav_about"
             android:icon="@drawable/ic_baseline_info_24"
             android:title="@string/menu_about" />
+    </group>-->
+
+    <group
+        android:id="@+id/exit"
+        >
+
+        <item
+            android:id="@+id/nav_telegram"
+            android:icon="@drawable/ic_qu_shadowsocks_foreground"
+            android:title="@string/telegram"
+            android:state_checked="true"
+
+            />
+        <!-- <item
+             android:id="@+id/nav_instagram"
+             android:icon="@drawable/ic_baseline_instagram_24"
+             android:title="@string/instagram"
+             android:state_checked="true"
+
+             />-->
+        <item
+            android:id="@+id/nav_exit"
+            android:icon="@drawable/ic_baseline_exit_24"
+            android:title="@string/exit"
+            android:state_checked="true"
+
+            />
     </group>
 
 </menu>

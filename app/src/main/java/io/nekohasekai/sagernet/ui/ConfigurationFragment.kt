@@ -1,11 +1,17 @@
 package io.nekohasekai.sagernet.ui
 
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
 import android.provider.OpenableColumns
+import android.telephony.TelephonyManager
 import android.text.SpannableStringBuilder
 import android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
 import android.text.format.Formatter
@@ -14,6 +20,7 @@ import android.view.*
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.PopupMenu
@@ -42,7 +49,9 @@ import io.nekohasekai.sagernet.databinding.LayoutAppsItemBinding
 import io.nekohasekai.sagernet.databinding.LayoutProfileListBinding
 import io.nekohasekai.sagernet.databinding.LayoutProgressListBinding
 import io.nekohasekai.sagernet.fmt.AbstractBean
+import io.nekohasekai.sagernet.fmt.ssh.SSHBean
 import io.nekohasekai.sagernet.fmt.toUniversalLink
+import io.nekohasekai.sagernet.fmt.v2ray.parseV2Ray
 import io.nekohasekai.sagernet.group.GroupUpdater
 import io.nekohasekai.sagernet.group.RawUpdater
 import io.nekohasekai.sagernet.ktx.*
@@ -62,7 +71,18 @@ import moe.matsuri.nb4a.proxy.neko.NekoJSInterface
 import moe.matsuri.nb4a.proxy.neko.NekoSettingActivity
 import moe.matsuri.nb4a.proxy.neko.canShare
 import moe.matsuri.nb4a.proxy.shadowtls.ShadowTLSSettingsActivity
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.Request
+import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
 import okhttp3.internal.closeQuietly
+import org.json.JSONArray
+import org.json.JSONException
+import org.json.JSONObject
+import java.io.IOException
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.Socket
@@ -72,6 +92,23 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.zip.ZipInputStream
 import kotlin.collections.set
+
+
+import android.annotation.SuppressLint
+import android.app.Activity
+import android.app.Dialog
+import android.os.Handler
+import android.widget.Button
+import android.widget.EditText
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import io.nekohasekai.sagernet.fmt.v2ray.VMessBean
+import io.nekohasekai.sagernet.fmt.v2ray.parseV2Ray
+import io.nekohasekai.sagernet.ui.ThemedActivity.GlobalStuff.base_url
+import io.nekohasekai.sagernet.ui.profile.HttpSettingsActivity
+import io.nekohasekai.sagernet.ui.profile.HysteriaSettingsActivity
+import okhttp3.*
+//import okhttp3.MediaType.Companion.toMediaType
 
 class ConfigurationFragment @JvmOverloads constructor(
     val select: Boolean = false, val selectedItem: ProxyEntity? = null, val titleRes: Int = 0
@@ -84,7 +121,11 @@ class ConfigurationFragment @JvmOverloads constructor(
     interface SelectCallback {
         fun returnProfile(profileId: Long)
     }
-
+    lateinit var responseString: String
+    lateinit var myDialog_add_profile_hologate: Dialog
+    lateinit var usernameDialog: EditText
+    lateinit var passwordDialog: EditText
+    lateinit var context2222: Context
     lateinit var adapter: GroupPagerAdapter
     lateinit var tabLayout: TabLayout
     lateinit var groupPager: ViewPager2
@@ -127,8 +168,87 @@ class ConfigurationFragment @JvmOverloads constructor(
                 .attach(this)
                 .commit()
         }
-    }
 
+        myDialog_add_profile_hologate = Dialog(requireContext())
+        myDialog_add_profile_hologate.setContentView(R.layout.layout_add_profile_hologate)
+        myDialog_add_profile_hologate.setCancelable(true)
+        val btn_ok: Button = myDialog_add_profile_hologate.findViewById(R.id.btn_ok) as Button
+        val btn_cancel: Button =
+            myDialog_add_profile_hologate.findViewById(R.id.btn_cancel) as Button
+
+        usernameDialog = myDialog_add_profile_hologate.findViewById(R.id.username) as EditText
+        passwordDialog = myDialog_add_profile_hologate.findViewById(R.id.password) as EditText
+        context2222 = requireActivity()
+
+
+        //   var token: String? = ""
+        var token: String? = try {
+            (requireActivity() as MainActivity).GetAutUser("token")
+
+        } catch (e: Exception) {
+            (requireActivity() as SwitchActivity).GetAutUser("token")
+        }
+        if (token.equals("")) {
+        } else {
+
+            println("onResponse proxies  obj  " + DataStore.showGroupInAutoGetListHoloGate)
+
+            if (DataStore.showGroupInAutoGetListHoloGate)
+                getListHologateFromServer()
+            // checkHologateFromServer()
+
+
+            //////////////////
+            setSpecificationsHologateToServer()
+        }
+        btn_ok.setOnClickListener {
+//            if (token.equals("")) {
+//                val intent = Intent(context, LoginActivity::class.java)
+//                val b = Bundle()
+//                b.putString("name", "action_get_list_site") //Your name
+//
+//                intent.putExtras(b) //Put your id to your next Intent
+//
+//                startActivity(intent)
+//            } else {
+            createAccountHologateFromServer(base_url + "/api/accounts/find")
+
+            //}
+        }
+        btn_cancel.setOnClickListener {
+            // myDialog_add_profile_hologate.show()
+            myDialog_add_profile_hologate.dismiss()
+
+        }
+
+
+        //  createAccountHologateFromServer()
+    }
+    override fun onResume() {
+        super.onResume()
+
+
+        if (ThemedActivity.GlobalStuff.check_language) {
+            ThemedActivity.GlobalStuff.check_language = false
+            ActivityCompat.recreate(requireActivity() as MainActivity)
+        } else {
+            if (ThemedActivity.GlobalStuff.checkFreeAccount) {
+                ThemedActivity.GlobalStuff.checkFreeAccount = false
+                checkHologateFromServer()
+            }
+
+            if (ThemedActivity.GlobalStuff.checkGetListAccount) {
+                ThemedActivity.GlobalStuff.checkGetListAccount = false
+                getListHologateFromServer()
+            }
+            if (ThemedActivity.GlobalStuff.check_add_profile_hologate) {
+                ThemedActivity.GlobalStuff.check_add_profile_hologate = false
+                myDialog_add_profile_hologate.show()
+            }
+        }
+
+
+    }
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -237,7 +357,7 @@ class ConfigurationFragment @JvmOverloads constructor(
         return super.onKeyDown(ketCode, event)
     }
 
-    private val importFile =
+    private val importFile1 =
         registerForActivityResult(ActivityResultContracts.GetContent()) { file ->
             if (file != null) runOnDefaultDispatcher {
                 try {
@@ -284,6 +404,119 @@ class ConfigurationFragment @JvmOverloads constructor(
             }
         }
 
+    val importFile = registerForActivityResult(ActivityResultContracts.GetContent()) { file ->
+        if (file != null) runOnDefaultDispatcher {
+            try {
+                val fileName = requireContext().contentResolver.query(file, null, null, null, null)
+                    ?.use { cursor ->
+                        cursor.moveToFirst()
+                        cursor.getColumnIndexOrThrow(OpenableColumns.DISPLAY_NAME)
+                            .let(cursor::getString)
+                    }
+
+                var proxies = mutableListOf<AbstractBean>()
+                val entities = ArrayList<AbstractBean>()
+
+                val entitie = SSHBean()
+                if (fileName != null && fileName.endsWith(".zip")) {
+                    // try parse wireguard zip
+
+                    val zip =
+                        ZipInputStream(requireContext().contentResolver.openInputStream(file)!!)
+                    while (true) {
+                        val entry = zip.nextEntry ?: break
+                        if (entry.isDirectory) continue
+                        val fileText = zip.bufferedReader().readText()
+                        RawUpdater.parseRaw(fileText)?.let { pl -> proxies.addAll(pl) }
+                        zip.closeEntry()
+                    }
+                    zip.closeQuietly()
+                } else {
+                    val fileText = requireContext().contentResolver.openInputStream(file)!!.use {
+                        it.bufferedReader().readText()
+                    }
+                    var obj = JSONObject(fileText)
+                    println("onResponse proxies  obj  $obj  ")
+                    val resOutbounds = obj.getJSONArray("outbounds")
+                    println("onResponse proxies  resoutbounds  $resOutbounds  ")
+
+                    val object22: JSONObject = resOutbounds.getJSONObject(0)
+
+                    entitie.authType = 1
+                    entitie.privateKey = ""
+                    entitie.publicKey = ""
+                    entitie.privateKeyPassphrase = ""
+                    entitie.customConfigJson = ""
+                    entitie.customOutboundJson = ""
+                    entitie.password =
+                        ChCrypto.aesDecrypt(object22.getString("password"), Key.KEY_HASH)
+                    entitie.username = ChCrypto.aesDecrypt(object22.getString("user"), Key.KEY_HASH)
+                    if (object22.has("name"))
+                        entitie.name = object22.getString("name")
+
+                    entitie.serverAddress =
+                        ChCrypto.aesDecrypt(object22.getString("server"), Key.KEY_HASH)
+                    entitie.serverPort = object22.getInt("server_port")
+                    if (object22.has("expiration_date"))
+                        entitie.expireDate = object22.getString("expiration_date")
+
+                    //  import(proxies)
+                    entities.add(entitie)
+
+                    val ssss = RawUpdater.parseRaw(fileText)
+
+                    println("onResponse proxies  fileText  $fileText  ")
+                    println("onResponse proxies  ssss  $ssss  ")
+//                     proxies = ssss as MutableList<AbstractBean>
+////                        RawUpdater.parseRaw(fileText)?.let {
+////
+////                            pl -> proxies.addAll(pl)
+////
+////
+////                    }
+                }
+                println("onResponse proxies1   $proxies  ")
+                if (entities.isEmpty()) onMainDispatcher {
+                    snackbar(getString(R.string.no_proxies_found_in_file)).show()
+                } else
+                    import(entities)
+//                if (proxies.isEmpty()) onMainDispatcher {
+//                    snackbar(getString(R.string.no_proxies_found_in_file)).show()
+//                } else
+//                    import(proxies)
+            } catch (e: SubscriptionFoundException) {
+                (requireActivity() as MainActivity).importSubscription(Uri.parse(e.link))
+            } catch (e: Exception) {
+                Logs.w(e)
+
+                onMainDispatcher {
+                    snackbar(e.readableMessage).show()
+                }
+            }
+        }
+    }
+    suspend fun import(proxies: List<AbstractBean>, ctx: Context) {
+        val targetId = DataStore.selectedGroupForImport()
+
+        for (proxy in proxies) {
+            /*    if(proxy.expireDate!!.isNotEmpty()){
+
+                }
+                else{
+                    proxy.expireDate="0"
+                }*/
+            ProfileManager.createProfile(targetId, proxy)
+        }
+        onMainDispatcher {
+            DataStore.editingGroup = targetId
+            snackbar(
+                ctx.resources.getQuantityString(
+                    R.plurals.added, proxies.size, proxies.size
+                )
+            ).show()
+        }
+
+    }
     suspend fun import(proxies: List<AbstractBean>) {
         val targetId = DataStore.selectedGroupForImport()
         for (proxy in proxies) {
@@ -301,7 +534,34 @@ class ConfigurationFragment @JvmOverloads constructor(
     }
 
     override fun onMenuItemClick(item: MenuItem): Boolean {
+        var token: String? = try {
+            (requireActivity() as MainActivity).GetAutUser("token")
+
+        } catch (e: Exception) {
+            (requireActivity() as SwitchActivity).GetAutUser("token")
+        }
         when (item.itemId) {
+            R.id.action_profile -> {
+                //Toast.makeText(activity, "aaaaa", Toast.LENGTH_LONG).show()
+                println("onResponse token1   $token  " + token.equals(null))
+
+                if (token.equals("")) {
+                    val intent = Intent(context, LoginActivity::class.java)
+                    val b = Bundle()
+                    b.putString("name", "action_profile") //Your name
+
+                    intent.putExtras(b) //Put your id to your next Intent
+
+                    startActivity(intent)
+                }
+                // startActivity(Intent(context, LoginActivity::class.java))
+
+                else
+                // (activity as MainActivity).displayFragment(WebviewFragment("https://shop.holoo.pro?token=$token"))
+                    startActivity(Intent(context, WebViewActivity::class.java))
+                // (activity as MainActivity).displayFragment(WebviewFragment("https://shop.holoo.pro?token=$token"))
+
+            }
             R.id.action_scan_qr_code -> {
                 startActivity(Intent(context, ScannerActivity::class.java))
             }
@@ -370,13 +630,13 @@ class ConfigurationFragment @JvmOverloads constructor(
                 startActivity(Intent(requireActivity(), HysteriaSettingsActivity::class.java))
             }
 
-            R.id.action_new_tuic -> {
-                startActivity(Intent(requireActivity(), TuicSettingsActivity::class.java))
-            }
-
-            R.id.action_new_ssh -> {
-                startActivity(Intent(requireActivity(), SSHSettingsActivity::class.java))
-            }
+//            R.id.action_new_tuic -> {
+//                startActivity(Intent(requireActivity(), TuicSettingsActivity::class.java))
+//            }
+//
+//            R.id.action_new_ssh -> {
+//                startActivity(Intent(requireActivity(), SSHSettingsActivity::class.java))
+//            }
 
             R.id.action_new_wg -> {
                 startActivity(Intent(requireActivity(), WireGuardSettingsActivity::class.java))
@@ -386,45 +646,63 @@ class ConfigurationFragment @JvmOverloads constructor(
                 startActivity(Intent(requireActivity(), ShadowTLSSettingsActivity::class.java))
             }
 
-            R.id.action_new_config -> {
-                startActivity(Intent(requireActivity(), ConfigSettingActivity::class.java))
-            }
+//            R.id.action_new_config -> {
+//                startActivity(Intent(requireActivity(), ConfigSettingActivity::class.java))
+//            }
+//
+//            R.id.action_new_chain -> {
+//                startActivity(Intent(requireActivity(), ChainSettingsActivity::class.java))
+//            }
+            R.id.action_add_profile_hologate -> {
 
-            R.id.action_new_chain -> {
-                startActivity(Intent(requireActivity(), ChainSettingsActivity::class.java))
-            }
+//                val intent = Intent(context, AddProfileActivity::class.java)
+//                startActivity(intent)
 
-            R.id.action_new_neko -> {
-                val context = requireContext()
-                lateinit var dialog: AlertDialog
-                val linearLayout = LinearLayout(context).apply {
-                    orientation = LinearLayout.VERTICAL
 
-                    NekoPluginManager.getProtocols().forEach { obj ->
-                        LayoutAppsItemBinding.inflate(layoutInflater, this, true).apply {
-                            itemcheck.isGone = true
-                            button.isGone = false
-                            itemicon.setImageDrawable(
-                                PackageCache.installedApps[obj.plgId]?.loadIcon(
-                                    context.packageManager
-                                )
-                            )
-                            title.text = obj.protocolId
-                            desc.text = obj.plgId
-                            button.setOnClickListener {
-                                dialog.dismiss()
-                                val intent = Intent(context, NekoSettingActivity::class.java)
-                                intent.putExtra("plgId", obj.plgId)
-                                intent.putExtra("protocolId", obj.protocolId)
-                                startActivity(intent)
-                            }
-                        }
-                    }
+                if (token.equals("")) {
+                    val intent = Intent(context, LoginActivity::class.java)
+                    val b = Bundle()
+                    b.putString("name", "action_add_profile_hologate") //Your name
+
+                    intent.putExtras(b) //Put your id to your next Intent
+
+                    startActivity(intent)
+                } else {
+                    myDialog_add_profile_hologate.show()
+
                 }
-                dialog = MaterialAlertDialogBuilder(context).setTitle(R.string.neko_plugin)
-                    .setView(linearLayout)
-                    .show()
             }
+//            R.id.action_new_neko -> {
+//                val context = requireContext()
+//                lateinit var dialog: AlertDialog
+//                val linearLayout = LinearLayout(context).apply {
+//                    orientation = LinearLayout.VERTICAL
+//
+//                    NekoPluginManager.getProtocols().forEach { obj ->
+//                        LayoutAppsItemBinding.inflate(layoutInflater, this, true).apply {
+//                            itemcheck.isGone = true
+//                            button.isGone = false
+//                            itemicon.setImageDrawable(
+//                                PackageCache.installedApps[obj.plgId]?.loadIcon(
+//                                    context.packageManager
+//                                )
+//                            )
+//                            title.text = obj.protocolId
+//                            desc.text = obj.plgId
+//                            button.setOnClickListener {
+//                                dialog.dismiss()
+//                                val intent = Intent(context, NekoSettingActivity::class.java)
+//                                intent.putExtra("plgId", obj.plgId)
+//                                intent.putExtra("protocolId", obj.protocolId)
+//                                startActivity(intent)
+//                            }
+//                        }
+//                    }
+//                }
+//                dialog = MaterialAlertDialogBuilder(context).setTitle(R.string.neko_plugin)
+//                    .setView(linearLayout)
+//                    .show()
+//            }
 
             R.id.action_update_subscription -> {
                 val group = DataStore.currentGroup()
@@ -454,7 +732,18 @@ class ConfigurationFragment @JvmOverloads constructor(
                     }
                 }
             }
+            R.id.action_free_account -> {
+                if (token.equals("")) {
+                    val intent = Intent(context, LoginActivity::class.java)
+                    val b = Bundle()
+                    b.putString("name", "action_free_account") //Your name
 
+                    intent.putExtras(b) //Put your id to your next Intent
+
+                    startActivity(intent)
+                } else
+                    checkHologateFromServer()
+            }
             R.id.action_connection_test_clear_results -> {
                 runOnDefaultDispatcher {
                     val profiles = SagerDatabase.proxyDao.getByGroup(DataStore.currentGroupId())
@@ -563,13 +852,15 @@ class ConfigurationFragment @JvmOverloads constructor(
                     }
                 }
             }
-
+//            R.id.action_connection_icmp_ping -> {
+//                pingTest(true, null, false, true)
+//            }
             R.id.action_connection_tcp_ping -> {
-                pingTest(false)
+                pingTest(false, null, false, true)
             }
 
             R.id.action_connection_url_test -> {
-                urlTest()
+                urlTest(null, true, null, null)
             }
         }
         return true
@@ -663,7 +954,7 @@ class ConfigurationFragment @JvmOverloads constructor(
 
     @OptIn(DelicateCoroutinesApi::class)
     @Suppress("EXPERIMENTAL_API_USAGE")
-    fun pingTest(icmpPing: Boolean) {
+    fun pingTest1(icmpPing: Boolean) {
         val test = TestDialog()
         val testJobs = mutableListOf<Job>()
         val dialog = test.builder.show()
@@ -804,9 +1095,239 @@ class ConfigurationFragment @JvmOverloads constructor(
             }
         }
     }
+    fun pingTest(
+        icmpPing: Boolean,
+        entities: ArrayList<ProxyEntity>?,
+        checkTestUrl: Boolean,
+        showDialog: Boolean
+    ) {
+        var dialog: AlertDialog? = null
+        var test: TestDialog? = null
+        if (showDialog) {
+            val activity: Activity? = activity
+            if (isAdded && activity != null) {
+                test = TestDialog()
+            }
+            dialog = test?.builder?.show()
+        }
 
+
+        val testJobs = mutableListOf<Job>()
+        val mainJob = runOnDefaultDispatcher {
+            if (DataStore.serviceState.started && entities == null) {
+                stopService()
+                delay(500) // wait for service stop
+            }
+
+
+            var profiles: ConcurrentLinkedQueue<ProxyEntity>? = null
+            if (entities == null) {
+                val group = DataStore.currentGroup()
+                val profilesUnfiltered = SagerDatabase.proxyDao.getByGroup(group.id)
+                test?.proxyN = profilesUnfiltered.size
+                profiles = ConcurrentLinkedQueue(profilesUnfiltered)
+            } else {
+
+                ////////////
+                // if (::adapter.isInitialized)
+                // adapter.notifyDataSetChanged()
+                // val fragment = getCurrentGroupFragment()
+                //  fragment?.configurationListView?.adapter?.notifyDataSetChanged()
+                //  (parentFragment as GroupFragment).configurationListView.adapter?.notifyDataSetChanged()
+                //  adapter.groupFragments[DataStore.selectedGroup]?.adapter?.notifyDataSetChanged()
+
+//            val fragment = getCurrentGroupFragment()
+//
+//            if (fragment != null) {
+//                // val selectedProxy = selectedItem?.id ?: DataStore.selectedProxy
+//                val selectedProfileIndex =
+//                    fragment.adapter!!.notifyDataSetChanged()
+//            }
+//            if (::adapter.isInitialized)
+//            adapter.reload()
+
+                ///////////
+
+                /*    val group = DataStore.currentGroup()
+                    val profilesUnfiltered = SagerDatabase.proxyDao.getByGroup(group.id)
+                  //  val ent = DataStore.currentProfile
+                    val ent: ProxyEntity? = profilesUnfiltered.find { it.id == DataStore.currentProfile }
+                    if (ent != null) {
+                        entities.add(ent)
+                    }*/
+
+                test?.proxyN = 1
+                profiles = ConcurrentLinkedQueue(entities)
+
+                //refresh recycle
+//                println("ahmad@ refresh recycle")
+//                val result = SagerDatabase.proxyDao.getByGroup(DataStore.currentGroupId())
+//                ProfileManager.updateProfile(result)
+                //refresh recycle
+
+
+            }
+            println("ahmad 1")
+            val testPool = newFixedThreadPoolContext(5, "Connection test pool")
+            repeat(5) {
+                testJobs.add(launch(testPool) {
+                    while (isActive) {
+                        val profile = profiles.poll() ?: break
+
+                        if (icmpPing) {
+                            if (!profile.requireBean().canICMPing()) {
+                                profile.status = -1
+                                profile.error =
+                                    app.getString(R.string.connection_test_icmp_ping_unavailable)
+                                test?.insert(profile)
+                                continue
+                            }
+                        } else {
+                            if (!profile.requireBean().canTCPing()) {
+                                profile.status = -1
+                                profile.error =
+                                    app.getString(R.string.connection_test_tcp_ping_unavailable)
+                                test?.insert(profile)
+                                continue
+                            }
+                        }
+
+                        profile.status = 0
+                        test?.insert(profile)
+                        var address = profile.requireBean().serverAddress
+                        if (!address.isIpAddress()) {
+                            try {
+                                InetAddress.getAllByName(address).apply {
+                                    if (isNotEmpty()) {
+                                        address = this[0].hostAddress
+                                    }
+                                }
+                            } catch (ignored: UnknownHostException) {
+                            }
+                        }
+                        if (!isActive) break
+                        if (!address.isIpAddress()) {
+                            profile.status = 2
+                            profile.error = app.getString(R.string.connection_test_domain_not_found)
+                            test?.update(profile)
+                            continue
+                        }
+                        try {
+                            println("ahmad 4")
+                            if (icmpPing) {
+                                // removed
+                            } else {
+                                println("ahmad 2")
+                                val socket = Socket()
+                                try {
+                                    socket.soTimeout = 3000
+                                    socket.bind(InetSocketAddress(0))
+                                    val start = SystemClock.elapsedRealtime()
+                                    socket.connect(
+                                        InetSocketAddress(
+                                            address, profile.requireBean().serverPort
+                                        ), 3000
+                                    )
+                                    if (!isActive) break
+                                    profile.status = 1
+                                    profile.ping = (SystemClock.elapsedRealtime() - start).toInt()
+                                    println("ahmad 3 " + profile.ping)
+
+
+                                    ////
+//                                    runOnDefaultDispatcher {
+//                                        test?.results?.filterNotNull()?.forEach {
+//                                            try {
+//                                                ProfileManager.updateProfile(it)
+//                                            } catch (e: Exception) {
+//                                                Logs.w(e)
+//                                            }
+//                                        }
+//                                        GroupManager.postReload(DataStore.currentGroupId())
+//
+//                                    }
+                                    ///////
+
+                                    test?.update(profile)
+                                    println("ahmad 33 ")
+                                    if (checkTestUrl) {
+                                        requireActivity().runOnUiThread {
+                                            Handler().postDelayed({
+                                                urlTest(entities, showDialog, test, null)
+                                            }, 1000)
+                                        }
+
+
+                                    }
+                                } finally {
+                                    socket.closeQuietly()
+                                }
+                            }
+                        } catch (e: Exception) {
+                            println("ahmad ping error 2 ")
+
+                            println("ahmad 5" + e)
+                            if (!isActive) break
+                            val message = e.readableMessage
+
+                            if (icmpPing) {
+                                profile.status = 2
+                                profile.error = getString(R.string.connection_test_unreachable)
+                            } else {
+                                profile.status = 2
+                                when {
+                                    !message.contains("failed:") -> profile.error =
+                                        getString(R.string.connection_test_timeout)
+
+                                    else -> when {
+                                        message.contains("ECONNREFUSED") -> {
+                                            profile.error =
+                                                getString(R.string.connection_test_refused)
+                                        }
+
+                                        message.contains("ENETUNREACH") -> {
+                                            profile.error =
+                                                getString(R.string.connection_test_unreachable)
+                                        }
+
+                                        else -> {
+                                            profile.status = 3
+                                            profile.error = message
+                                        }
+                                    }
+                                }
+                            }
+                            test?.update(profile)
+                        }
+                    }
+                })
+            }
+            println("ahmad 77")
+            testJobs.joinAll()
+            testPool.close()
+
+            onMainDispatcher {
+                dialog?.dismiss()
+            }
+
+        }
+        test?.cancel = {
+            runOnDefaultDispatcher {
+                test?.results?.filterNotNull()?.forEach {
+                    try {
+                        ProfileManager.updateProfile(it)
+                    } catch (e: Exception) {
+                        Logs.w(e)
+                    }
+                }
+                GroupManager.postReload(DataStore.currentGroupId())
+                mainJob.cancel()
+                testJobs.forEach { it.cancel() }
+            }
+        }
+    }
     @OptIn(DelicateCoroutinesApi::class)
-    fun urlTest() {
+    fun urlTest1() {
         val test = TestDialog()
         val dialog = test.builder.show()
         val testJobs = mutableListOf<Job>()
@@ -858,6 +1379,147 @@ class ConfigurationFragment @JvmOverloads constructor(
         test.cancel = {
             runOnDefaultDispatcher {
                 test.results.filterNotNull().forEach {
+                    try {
+                        ProfileManager.updateProfile(it)
+                    } catch (e: Exception) {
+                        Logs.w(e)
+                    }
+                }
+                GroupManager.postReload(DataStore.currentGroupId())
+                NekoJSInterface.Default.destroyAllJsi()
+                mainJob.cancel()
+                testJobs.forEach { it.cancel() }
+            }
+        }
+    }
+    fun urlTest(
+        entities: ArrayList<ProxyEntity>?, showDialog: Boolean, testDialog: TestDialog?,
+        main_act: MainActivity?
+    ) {
+        var dialog: AlertDialog? = null
+        var test: TestDialog? = null
+
+        if (showDialog) {
+            val activity: Activity? = activity
+            if (isAdded && activity != null) {
+                test = TestDialog()
+            }
+
+            dialog = test?.builder?.show()
+        }
+
+        println("ahmad 44 ")
+//        val test = TestDialog()
+//        val dialog = test.builder.show()
+        val testJobs = mutableListOf<Job>()
+
+        val mainJob = runOnDefaultDispatcher {
+            println("ahmad 99 ")
+            if (DataStore.serviceState.started && entities == null) {
+                stopService()
+                delay(500) // wait for service stop
+            }
+            var profiles: ConcurrentLinkedQueue<ProxyEntity>? = null
+
+            if (entities == null) {
+                val group = DataStore.currentGroup()
+                val profilesUnfiltered = SagerDatabase.proxyDao.getByGroup(group.id)
+                test?.proxyN = profilesUnfiltered.size
+                profiles = ConcurrentLinkedQueue(profilesUnfiltered)
+            } else {
+                //  val group = DataStore.currentGroup()
+                //   val profilesUnfiltered = SagerDatabase.proxyDao.getByGroup(group.id)[1]
+                test?.proxyN = 1
+                // entities.add(profilesUnfiltered)
+                profiles = ConcurrentLinkedQueue(entities)
+
+//                val group = DataStore.currentGroup()
+//                val profilesUnfiltered = SagerDatabase.proxyDao.getByGroup(group.id)[1]
+//                entities.add(profilesUnfiltered)
+//                test.proxyN = 1
+//                profiles = ConcurrentLinkedQueue(entities)
+
+
+                //refresh recycle
+//                println("ahmad@ refresh recycle")
+//                val result = SagerDatabase.proxyDao.getByGroup(DataStore.currentGroupId())
+//                ProfileManager.updateProfile(result)
+                //refresh recycle
+            }
+
+
+            val urlTest = UrlTest() // note: this is NOT in bg process
+
+            repeat(5) {
+                testJobs.add(launch {
+                    println("ahmad 11 ")
+                    while (isActive) {
+                        println("ahmad 12 ")
+                        val profile = profiles.poll() ?: break
+                        profile.status = 0
+                        test?.insert(profile)
+
+                        try {
+                            println("ahmad 15 ")
+                            val result = urlTest.doTest(profile)
+                            profile.status = 1
+                            profile.ping = result
+                            println("ahmad 88 " + profile.ping)
+
+                            /*      main_act?.runOnUiThread {
+                                      main_act.connect.launch(
+                                          null
+                                      )
+                                      Handler().postDelayed({
+                                          if (DataStore.serviceState.connected) main_act?.binding?.stats?.testConnection()
+                                      }, 3000)
+                                  }*/
+                        } catch (e: PluginManager.PluginNotFoundException) {
+                            println("ahmad error 13 " + e)
+//                            if (DataStore.serviceState.started &&entities != null) {
+//                                stopService()
+//                                delay(2000) // wait for service stop
+//                            }
+//                            LogHologateFromServer(
+//                                "http://deploy.hologate.info:2013/api/log/connection",
+//                                entities,
+//                                main_act
+//                            )
+
+
+                            profile.status = 2
+                            profile.error = e.readableMessage
+                        } catch (e: Exception) {
+                            println("ahmad error  14 " + e)
+//                            if (DataStore.serviceState.started &&entities != null) {
+//                                stopService()
+//                                delay(2000) // wait for service stop
+//                            }
+//                            LogHologateFromServer(
+//                                "http://deploy.hologate.info:2013/api/log/connection",
+//                                entities,
+//                                main_act
+//                            )
+
+
+                            profile.status = 3
+                            profile.error = e.readableMessage
+                        }
+
+                        test?.update(profile)
+                    }
+                })
+            }
+
+            testJobs.joinAll()
+
+            onMainDispatcher {
+                dialog?.dismiss()
+            }
+        }
+        test?.cancel = {
+            runOnDefaultDispatcher {
+                test?.results?.filterNotNull()?.forEach {
                     try {
                         ProfileManager.updateProfile(it)
                     } catch (e: Exception) {
@@ -1440,11 +2102,49 @@ class ConfigurationFragment @JvmOverloads constructor(
 
         val profileAccess = Mutex()
         val reloadAccess = Mutex()
+        @SuppressLint("ResourceAsColor")
+        fun getColorForLine(compareValue: Int): Int {
+
+            var color = Color.GRAY
+
+            if (compareValue > 10) {
+                // color = Color.GREEN
+                //color =R.color.material_green_700
+                color = ContextCompat.getColor(requireContext(), R.color.material_green_700)
+
+                //System.out.println("today is latter than 4th-Jan-2022");
+            } else if (compareValue >= 0) {
+                //  color = R.color.material_amber_800
+                color = ContextCompat.getColor(requireContext(), R.color.material_amber_800)
+
+                //System.out.println("today is latter than 4th-Jan-2022");
+            } else {
+                //  color = Color.RED
+                //color =Color.parseColor(R.color.material_red_700.toString())
+                color = ContextCompat.getColor(requireContext(), R.color.material_red_700)
+
+                //System.out.println("today is earlier than 4th-Jan-2022");
+            }
+//        when {
+//            line.contains(" INFO[") || line.contains(" [Info]") -> {
+//                color = ForegroundColorSpan((0xFF86C166).toInt())
+//            }
+//            line.contains(" ERROR[") || line.contains(" [Error]") -> {
+//                color = ForegroundColorSpan(Color.RED)
+//            }
+//            line.contains(" WARN[") || line.contains(" [Warning]") -> {
+//                color = ForegroundColorSpan(Color.RED)
+//            }
+//        }
+            return color
+        }
 
         inner class ConfigurationHolder(val view: View) : RecyclerView.ViewHolder(view),
             PopupMenu.OnMenuItemClickListener {
 
             lateinit var entity: ProxyEntity
+            val profile_expireDate: TextView = view.findViewById(R.id.profile_expireDate)
+            val testConnect: ImageView = view.findViewById(R.id.testConnect)
 
             val profileName: TextView = view.findViewById(R.id.profile_name)
             val profileType: TextView = view.findViewById(R.id.profile_type)
@@ -1458,7 +2158,7 @@ class ConfigurationFragment @JvmOverloads constructor(
             val shareLayer: LinearLayout = view.findViewById(R.id.share_layer)
             val shareButton: ImageView = view.findViewById(R.id.shareIcon)
             val removeButton: ImageView = view.findViewById(R.id.remove)
-
+            @SuppressLint("SimpleDateFormat")
             fun bind(proxyEntity: ProxyEntity, trafficData: TrafficData? = null) {
                 val pf = parentFragment as? ConfigurationFragment ?: return
 
@@ -1487,6 +2187,11 @@ class ConfigurationFragment @JvmOverloads constructor(
                                 if (DataStore.serviceState.canStop && reloadAccess.tryLock()) {
                                     SagerNet.reloadService()
                                     reloadAccess.unlock()
+                                    (requireActivity() as MainActivity)!!.runOnUiThread {
+                                        Handler().postDelayed({
+                                            if (DataStore.serviceState.connected) (requireActivity() as MainActivity).binding.stats.testConnection()
+                                        }, 3000)
+                                    }
                                 }
                             } else if (SagerNet.isTv) {
                                 if (DataStore.serviceState.started) {
@@ -1590,12 +2295,17 @@ class ConfigurationFragment @JvmOverloads constructor(
                 }
 
                 runOnDefaultDispatcher {
+                    println("ahmad@ currentProfile  " + proxyEntity.id)
+                    println("ahmad currentProfile  " + DataStore.serviceState.connected + " _ " + DataStore.serviceState.started)
+
                     val selected = (selectedItem?.id ?: DataStore.selectedProxy) == proxyEntity.id
                     val started =
                         selected && DataStore.serviceState.started && DataStore.currentProfile == proxyEntity.id
                     onMainDispatcher {
                         editButton.isEnabled = !started
                         removeButton.isEnabled = !started
+                        testConnect.isEnabled = !DataStore.serviceState.started
+
                         selectedView.visibility = if (selected) View.VISIBLE else View.INVISIBLE
                     }
 
@@ -1605,10 +2315,10 @@ class ConfigurationFragment @JvmOverloads constructor(
 
                         when {
                             !proxyEntity.haveStandardLink() -> {
-                                popup.menu.findItem(R.id.action_group_qr).subMenu?.removeItem(R.id.action_standard_qr)
-                                popup.menu.findItem(R.id.action_group_clipboard).subMenu?.removeItem(
-                                    R.id.action_standard_clipboard
-                                )
+//                                popup.menu.findItem(R.id.action_group_qr).subMenu?.removeItem(R.id.action_standard_qr)
+//                                popup.menu.findItem(R.id.action_group_clipboard).subMenu?.removeItem(
+//                                    R.id.action_standard_clipboard
+//                                )
                             }
 
                             !proxyEntity.haveLink() -> {
@@ -1638,7 +2348,27 @@ class ConfigurationFragment @JvmOverloads constructor(
                         }
                     }
                 }
+                testConnect.setOnClickListener {
+                    //  println("ahmad testConnect:$selected  ")
 
+                    // if (selected){
+                    val entities = ArrayList<ProxyEntity>()
+                    entities.add(proxyEntity)
+                    // (parentFragment as ConfigurationFragment).pingTest(false, entities, false, true)
+                    (parentFragment as ConfigurationFragment).urlTest(entities, true, null, null)
+//                    }
+//                    else{
+//                      //  adapter.notifyDataSetChanged()
+//                        Toast.makeText(
+//                            (requireActivity() as MainActivity),
+//                            "!!!!",
+//                            Toast.LENGTH_SHORT
+//                        ).show()
+//                    }
+
+                    //   (parentFragment as ConfigurationFragment).urlTest( entities)
+                    //pingTest(true, null, false)
+                }
             }
 
             var currentName = ""
@@ -1650,21 +2380,33 @@ class ConfigurationFragment @JvmOverloads constructor(
                 val success = SagerNet.trySetPrimaryClip(link)
                 (activity as MainActivity).snackbar(if (success) R.string.action_export_msg else R.string.action_export_err)
                     .show()
+
+                val intent = Intent()
+                intent.action = Intent.ACTION_SEND
+                intent.putExtra(Intent.EXTRA_TEXT, link)
+                intent.type = "text/plain"
+                startActivity(Intent.createChooser(intent, "HoloGate link Share To:"))
+
             }
 
             override fun onMenuItemClick(item: MenuItem): Boolean {
                 try {
                     currentName = entity.displayName()!!
                     when (item.itemId) {
-                        R.id.action_standard_qr -> showCode(entity.toStdLink()!!)
-                        R.id.action_standard_clipboard -> export(entity.toStdLink()!!)
-                        R.id.action_universal_qr -> showCode(entity.requireBean().toUniversalLink())
-                        R.id.action_universal_clipboard -> export(
+//                        R.id.action_standard_qr -> showCode(entity.toStdLink()!!)
+//                        R.id.action_standard_clipboard -> export(entity.toStdLink()!!)
+//                        R.id.action_universal_qr -> showCode(entity.requireBean().toUniversalLink())
+                        R.id.action_group_qr -> showCode(entity.requireBean().toUniversalLink())
+
+//                        R.id.action_universal_clipboard -> export(
+//                            entity.requireBean().toUniversalLink()
+//                        )
+                        R.id.action_group_clipboard -> export(
                             entity.requireBean().toUniversalLink()
                         )
-
-                        R.id.action_config_export_clipboard -> export(entity.exportConfig().first)
-                        R.id.action_config_export_file -> {
+//                        R.id.action_config_export_clipboard -> export(entity.exportConfig().first)
+//                        R.id.action_config_export_file -> {
+                        R.id.action_group_configuration -> {
                             val cfg = entity.exportConfig()
                             DataStore.serverConfig = cfg.first
                             startFilesForResult(
@@ -1693,6 +2435,19 @@ class ConfigurationFragment @JvmOverloads constructor(
                             .use {
                                 it.write(DataStore.serverConfig)
                             }
+
+                        ////****share****////
+                        val intent = Intent(Intent.ACTION_SEND)
+                        intent.type = "application/json"
+                        intent.putExtra(Intent.EXTRA_STREAM, data)
+
+                        startActivity(
+                            Intent.createChooser(
+                                intent,
+                                "Exportar arquivo de Log de Auditoria"
+                            )
+                        )
+                        ////****share****////
                         onMainDispatcher {
                             snackbar(getString(R.string.action_export_msg)).show()
                         }
@@ -1712,4 +2467,787 @@ class ConfigurationFragment @JvmOverloads constructor(
             searchView.clearFocus()
         }
 
+
+    private fun getListHologateFromServer() {
+        // (requireActivity() as MainActivity).dialogLoading?.show()
+
+        var token: String? = try {
+            (requireActivity() as MainActivity).GetAutUser("token")
+
+        } catch (e: Exception) {
+            (requireActivity() as SwitchActivity).GetAutUser("token")
+        }
+        val entities = ArrayList<AbstractBean>()
+        val payload = "test payload"
+
+        //   val okHttpClient = OkHttpClient()
+        val okHttpClient = UnsafeOkHttpClient.getUnsafeOkHttpClient().build()
+
+        val jsonObject = JSONObject()
+        try {
+            jsonObject.put("token_fb", ThemedActivity.GlobalStuff.token_fb)
+        } catch (e: JSONException) {
+            e.printStackTrace()
+        }
+        val requestBody = RequestBody.create(
+            "application/json; charset=utf-8".toMediaType(),
+            jsonObject.toString()
+        )
+
+        //  val requestBody = payload.toRequestBody()
+        val request = Request.Builder()
+            .header("Authorization", token.toString())
+            //.header("Authorization", "Bearer 5|HF0ERRIE1fgVXKes5AYC7WOUEK9y2ieDJeBIGwBD")
+            .method("POST", requestBody)
+            .url(ThemedActivity.GlobalStuff.base_url + "/api/accounts")
+            .build()
+        okHttpClient.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                try {
+                    activity!!.runOnUiThread {
+
+
+                        (requireActivity() as MainActivity).dialogLoading?.dismiss()
+
+
+                        Toast.makeText(
+                            activity,
+                            "The server encountered a problem",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                } catch (e: Exception) {
+                    // (requireActivity() as SwitchActivity).dialogLoading?.dismiss()
+                }
+                // Handle this
+                println("onFailure : $e")
+
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                // Handle this
+                response.use {
+
+
+                    try {
+                        (requireActivity() as MainActivity).dialogLoading?.dismiss()
+
+                    } catch (e: Exception) {
+                        // (requireActivity() as SwitchActivity).dialogLoading?.dismiss()
+                    }
+                    if (!response.isSuccessful) throw IOException("Unexpected code $response")
+
+                    /*  for ((name, value) in response.headers) {
+                          println("$name: $value")
+                      }*/
+
+                    try {
+                        val jsonData: String = response.body!!.string()
+                        println("onResponse111   $jsonData")
+                        //activity.SetAutUser("token", "").apply();
+                        //  token = GetAutUser("token");
+                        val Jobject = JSONObject(jsonData)
+                        val Jarray: JSONArray = Jobject.getJSONArray("accounts")
+
+                        for (i in 0 until Jarray.length()) {
+                            val object22: JSONObject = Jarray.getJSONObject(i)
+                            if (object22.has("type") && object22.getString("type") == "v2ray") {
+                                val hhhh: String = object22.getString("link")
+                                println("onResponse1114444444   $hhhh")
+
+                                //    if (i==Jarray.length()-1) {
+//                                entities.add(
+//                                    parseV2Ray("vmess://eyJ2IjoiMiIsInBzIjoiVWFfNTk5IiwiYWRkIjoiMTA0LjIxLjUzLjEyIiwicG9ydCI6NDQzLCJpZCI6IjAzZmNjNjE4LWI5M2QtNjc5Ni02YWVkLThhMzhjOTc1ZDU4MSIsImFpZCI6MSwic2N5IjoiYXV0byIsIm5ldCI6IndzIiwiaG9zdCI6Im9waGVsaWEubW9tIiwicGF0aCI6Imxpbmt2d3MiLCJ0bHMiOiJ0bHMifQ==")
+//                                )
+                                if (object22.getString("link") !== "null"){
+                                    entities.add(
+                                        parseV2Ray(object22.getString("link"))
+                                    )
+                                }
+
+
+                            } else {
+                                val entitie = SSHBean()
+
+                                entitie.authType = 1
+                                entitie.privateKey = ""
+                                entitie.publicKey = ""
+                                entitie.privateKeyPassphrase = ""
+                                entitie.customConfigJson = ""
+                                entitie.customOutboundJson = ""
+                                entitie.password = object22.getString("password")
+                                entitie.username = object22.getString("username")
+                                entitie.name = object22.getString("name")
+                                entitie.serverAddress = object22.getString("host")
+                                entitie.serverPort = object22.getInt("port")
+                                entitie.expireDate = object22.getString("expiration_date")
+                                entities.add(entitie)
+
+                            }
+
+
+                            //  import(proxies)
+                            println("onResponse222   $object22")
+                            println("onResponse333  " + object22.getString("name"))
+                        }
+
+                        runOnDefaultDispatcher {
+                            try {
+                                val proxies = entities
+                                if (proxies.isNullOrEmpty()) onMainDispatcher {
+                                    snackbar(getString(R.string.no_proxies_found_in_clipboard)).show()
+                                }
+                                else {
+                                    import(proxies)
+                                }
+
+                            } catch (e: SubscriptionFoundException) {
+
+                                (requireActivity() as MainActivity).importSubscription(Uri.parse(e.link))
+                            } catch (e: Exception) {
+                                Logs.w(e)
+
+                                onMainDispatcher {
+                                    snackbar(e.readableMessage).show()
+                                }
+                            }
+                        }
+
+
+                    } catch (e: Exception) {
+                        println("onResponse Exception  $e")
+                        //Toast.makeText(requireActivity(), "aaaaa", Toast.LENGTH_LONG).show()
+                        activity!!.runOnUiThread {
+                            Toast.makeText(
+                                activity,
+                                "The server encountered a problem",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+
+
+//                            for ((name, value) in response.headers) {
+//                                println("$name: $value")
+//                            }
+//                            println("onResponse   "+response.body!!.string())
+
+                }
+
+            }
+        })
+    }
+
+    private fun checkHologateFromServer() {
+        var token: String? = try {
+            (requireActivity() as MainActivity).GetAutUser("token")
+
+        } catch (e: Exception) {
+            (requireActivity() as SwitchActivity).GetAutUser("token")
+        }
+        println("onResponse token   $token")
+        val payload = "test payload"
+
+        // val okHttpClient = OkHttpClient()
+        val okHttpClient = UnsafeOkHttpClient.getUnsafeOkHttpClient().build()
+
+        val requestBody = payload.toRequestBody()
+        val request = Request.Builder()
+            .header("Authorization", token.toString())
+            //.header("Authorization", "Bearer 5|HF0ERRIE1fgVXKes5AYC7WOUEK9y2ieDJeBIGwBD")
+            .method("POST", requestBody)
+            .url(ThemedActivity.GlobalStuff.base_url + "/api/accounts/gift/can")
+            .build()
+        okHttpClient.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                (requireActivity() as MainActivity)!!.runOnUiThread {
+                    try {
+                        (requireActivity() as MainActivity).dialogLoading?.dismiss()
+
+                    } catch (e: Exception) {
+                        // (requireActivity() as SwitchActivity).dialogLoading?.dismiss()
+                    }
+                    Toast.makeText(
+                        (requireActivity() as MainActivity),
+                        "The server encountered a problem",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                // Handle this
+                println("onFailure : $e")
+
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                // Handle this
+                response.use {
+                    try {
+                        (requireActivity() as MainActivity).dialogLoading?.dismiss()
+
+                    } catch (e: Exception) {
+                        // (requireActivity() as SwitchActivity).dialogLoading?.dismiss()
+                    }
+                    if (!response.isSuccessful) throw IOException("Unexpected code $response")
+
+                    /*  for ((name, value) in response.headers) {
+                          println("$name: $value")
+                      }*/
+
+                    try {
+                        val jsonData: String = response.body!!.string()
+                        println("onResponse checkHologateFromServer   $jsonData")
+
+                        val Jobject = JSONObject(jsonData)
+                        val _can: Boolean = Jobject.getBoolean("can")
+                        println("onResponse checkHologateFromServer object22  $jsonData")
+                        if (_can) {
+                            activity!!.runOnUiThread {
+                                MaterialAlertDialogBuilder(requireContext()).setTitle(R.string.free_account)
+                                    .setMessage(R.string.free_account_message)
+                                    .setPositiveButton(R.string.yes) { _, _ ->
+//                                        println("onResponse checkHologateFromServer setPositiveButton  ")
+//                                        Toast.makeText(
+//                                            activity,
+//                                            "The server encountered a problem",
+//                                            Toast.LENGTH_SHORT
+//                                        ).show()
+                                        // token?.let { it1 -> createAccountHologateFromServer(it1) }
+                                        createAccountHologateFromServer("")
+                                    }
+                                    .setNegativeButton(android.R.string.cancel, null)
+                                    .show()
+                            }
+
+                        } else
+                            activity!!.runOnUiThread {
+                                if (Jobject.has("message"))
+                                    Toast.makeText(
+                                        activity,
+                                        Jobject.getString("message"),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                else
+                                    Toast.makeText(
+                                        activity,
+                                        getString(R.string.free_account_message_error),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                            }
+
+                    } catch (e: Exception) {
+                        println("onResponse Exception  $e")
+                        //Toast.makeText(requireActivity(), "aaaaa", Toast.LENGTH_LONG).show()
+                        activity!!.runOnUiThread {
+                            Toast.makeText(
+                                activity,
+                                "The server encountered a problem",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+
+
+//                            for ((name, value) in response.headers) {
+//                                println("$name: $value")
+//                            }
+//                            println("onResponse   "+response.body!!.string())
+
+                }
+
+            }
+        })
+    }
+
+    private fun createAccountHologateFromServer(url: String) {
+
+
+        try {
+            (requireActivity() as MainActivity).dialogLoading?.show()
+
+        } catch (e: Exception) {
+            // (requireActivity() as SwitchActivity).dialogLoading?.dismiss()
+        }
+        var url_Server = ""
+        val jsonObject = JSONObject()
+        if (url == "") {
+            url_Server = ThemedActivity.GlobalStuff.base_url + "/api/accounts/gift/create"
+        } else {
+            url_Server = url
+            val username = usernameDialog!!.text.toString()
+            val password = passwordDialog!!.text.toString()
+
+
+            try {
+//            jsonObject.put("username", "majidlx@gmail.com")
+//            jsonObject.put("password", "123456789")
+                jsonObject.put("username", username)
+                jsonObject.put("password", password)
+                jsonObject.put("token_fb", ThemedActivity.GlobalStuff.token_fb)
+            } catch (e: JSONException) {
+                e.printStackTrace()
+            }
+        }
+
+        //  if (token.equals(""))
+
+
+        /*  val email = _emailText!!.text.toString()
+        val password = _passwordText!!.text.toString()
+
+        //val payload = "username=majidlx@gmail.com&&password=123456789"
+
+        val okHttpClient = OkHttpClient()
+        // val requestBody = payload.toRequestBody()
+
+        val jsonObject = JSONObject()
+        try {
+//            jsonObject.put("username", "majidlx@gmail.com")
+//            jsonObject.put("password", "123456789")
+            jsonObject.put("username", email)
+            jsonObject.put("password", password)
+        } catch (e: JSONException) {
+            e.printStackTrace()
+        }
+        val body: RequestBody = RequestBody.create(
+            "application/json; charset=utf-8".toMediaType(),
+            jsonObject.toString()
+        )
+
+        //val mediaType = "application/json; charset=utf-8".toMediaType()
+        //  val body = jsonObject.toString().toRequestBody(mediaType)
+        val request = Request.Builder()
+            // .header("Authorization", "Bearer 5|HF0ERRIE1fgVXKes5AYC7WOUEK9y2ieDJeBIGwBD")
+            .method("POST", body)
+            // .method("POST", requestBody)
+            // .post(body)
+
+            .url("https://shop.holoo.pro/api/login")
+            .build()*/
+        var token: String? = try {
+            (requireActivity() as MainActivity).GetAutUser("token")
+
+        } catch (e: Exception) {
+            (requireActivity() as SwitchActivity).GetAutUser("token")
+        }
+        println("onResponse token   $token")
+        val payload = "test payload"
+
+        // val okHttpClient = OkHttpClient()
+        val okHttpClient = UnsafeOkHttpClient.getUnsafeOkHttpClient().build()
+
+        var requestBody: RequestBody? = null
+        if (url == "") {
+            requestBody = payload.toRequestBody()
+        } else {
+            requestBody = RequestBody.create(
+                "application/json; charset=utf-8".toMediaType(),
+                jsonObject.toString()
+            )
+            //requestBody =payload.toRequestBody()
+        }
+
+        val request = Request.Builder()
+            .header("Authorization", token.toString())
+            //.header("Authorization", "Bearer 5|HF0ERRIE1fgVXKes5AYC7WOUEK9y2ieDJeBIGwBD")
+            .method("POST", requestBody)
+            .url(url_Server)
+            .build()
+        okHttpClient.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+
+                (requireActivity() as MainActivity)!!.runOnUiThread {
+                    try {
+                        (requireActivity() as MainActivity).dialogLoading?.dismiss()
+
+                    } catch (e: Exception) {
+                        // (requireActivity() as SwitchActivity).dialogLoading?.dismiss()
+                    }
+                    Toast.makeText(
+                        (requireActivity() as MainActivity),
+                        "The server encountered a problem",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+
+                // Handle this
+                println("onFailure : $e")
+
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                try {
+                    (requireActivity() as MainActivity).dialogLoading?.dismiss()
+
+                } catch (e: Exception) {
+                    // (requireActivity() as SwitchActivity).dialogLoading?.dismiss()
+                }                // Handle this
+                response.use {
+                    // if (!response.isSuccessful) throw IOException("Unexpected code $response")
+                    if (!response.isSuccessful) {
+                        val jsonData: String = response.body!!.string()
+                        val Jobject = JSONObject(jsonData)
+                        (requireActivity() as MainActivity)!!.runOnUiThread {
+                            Toast.makeText(
+                                (requireActivity() as MainActivity),
+                                Jobject.getString("message"),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                        throw IOException("Unexpected code $response")
+                    }
+                    /*  for ((name, value) in response.headers) {
+                          println("$name: $value")
+                      }*/
+
+                    try {
+                        val entities = ArrayList<AbstractBean>()
+
+                        val jsonData: String = response.body!!.string()
+                        println("onResponse111222   $jsonData")
+                        //activity.SetAutUser("token", "").apply();
+                        //  token = GetAutUser("token");
+                        val Jobject = JSONObject(jsonData)
+                        val account: JSONObject = Jobject.getJSONObject("account")
+                        val entitie = SSHBean()
+                        val object22: JSONObject = account
+
+                        if (Jobject.isNull("account")) {
+
+                        } else {
+                            entitie.authType = 1
+                            entitie.privateKey = ""
+                            entitie.publicKey = ""
+                            entitie.privateKeyPassphrase = ""
+                            entitie.customConfigJson = ""
+                            entitie.customOutboundJson = ""
+                            entitie.password = object22.getString("password")
+                            entitie.username = object22.getString("username")
+                            entitie.name = object22.getString("name")
+                            entitie.serverAddress = object22.getString("host")
+                            entitie.serverPort = object22.getInt("port")
+                            entitie.expireDate = object22.getString("expiration_date")
+
+                            //  import(proxies)
+                            entities.add(entitie)
+                            println("onResponse222   $object22")
+                            println("onResponse333  " + object22.getString("name"))
+
+                            runOnDefaultDispatcher {
+                                try {
+                                    val proxies = entities
+                                    if (proxies.isNullOrEmpty()) onMainDispatcher {
+                                        snackbar(getString(R.string.no_proxies_found_in_clipboard)).show()
+                                    }
+                                    else {
+                                        import(proxies)
+                                    }
+
+                                } catch (e: SubscriptionFoundException) {
+                                    (requireActivity() as MainActivity).importSubscription(
+                                        Uri.parse(
+                                            e.link
+                                        )
+                                    )
+                                } catch (e: Exception) {
+                                    Logs.w(e)
+
+                                    onMainDispatcher {
+                                        snackbar(e.readableMessage).show()
+                                    }
+                                }
+                            }
+
+                        }
+                        if (url != "") {
+                            myDialog_add_profile_hologate.dismiss()
+                        }
+
+                    } catch (e: Exception) {
+                        println("onResponse Exception  $e")
+                        //Toast.makeText(requireActivity(), "aaaaa", Toast.LENGTH_LONG).show()
+                        activity!!.runOnUiThread {
+                            Toast.makeText(
+                                activity,
+                                "The server encountered a problem",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+
+
+//                            for ((name, value) in response.headers) {
+//                                println("$name: $value")
+//                            }
+//                            println("onResponse   "+response.body!!.string())
+
+                }
+
+            }
+        })
+    }
+
+    fun LogHologateFromServer(
+        url: String,
+        entities: ArrayList<ProxyEntity>?,
+        main_act: MainActivity?
+    ) {
+
+//        (requireActivity() as MainActivity)!!.runOnUiThread {
+//            (requireActivity() as MainActivity).dialogLoading?.show()
+//        }
+        var url_Server = ""
+        val jsonObject = JSONObject()
+        ///////////TypeConnection////////
+//        var resultTypeConnect = activity?.let { it1 ->
+//            (requireActivity() as MainActivity).isInternetAvailable(
+//                it1
+//            )
+//        }
+        var resultTypeConnect = main_act?.let { isInternetAvailable1(it) }
+        if (resultTypeConnect == "CELLULAR") {
+            val manager =
+                main_act!!.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+            val carrierName = manager.networkOperatorName
+            resultTypeConnect = carrierName
+            println("ahmad 3@ " + carrierName)
+        } else {
+            println("ahmad 4@ " + "nnooo")
+        }
+        ///////////TypeConnection////////
+
+        if (url == "") {
+            url_Server = ThemedActivity.GlobalStuff.base_url + "/api/log/connection"
+        } else {
+            url_Server = url
+//            val username = usernameDialog!!.text.toString()
+//            val password = passwordDialog!!.text.toString()
+
+
+        }
+        try {
+
+            val result_entities = entities?.get(0)
+            val sshBeean = result_entities?.sshBean
+
+            println(
+                "ahmad @@@@ " + "url=> " + result_entities?.displayAddress() +
+                        "  username=> " + sshBeean?.username +
+                        "  password=> " + sshBeean?.password +
+                        "  serverPort=> " + sshBeean?.serverPort +
+                        "  type_network=> " + resultTypeConnect +
+                        "  type_connection=> " + result_entities?.displayType()
+            )
+            jsonObject.put("address", result_entities?.displayAddress())
+            jsonObject.put("username", sshBeean?.username)
+            jsonObject.put("password", sshBeean?.password)
+            jsonObject.put("port", sshBeean?.serverPort)
+            jsonObject.put("type_connection", result_entities?.displayType())
+            jsonObject.put("type_network", resultTypeConnect)
+            jsonObject.put("token_fb", ThemedActivity.GlobalStuff.token_fb)
+        } catch (e: JSONException) {
+            println("error   $e")
+            e.printStackTrace()
+        }
+//        val prefs = main_act?.getSharedPreferences("Wedding", AppCompatActivity.MODE_PRIVATE)
+//        val restoredText = prefs?.getString("token", "")
+//        var token: String? =""
+//         if (restoredText != "") {
+//             token= prefs?.getString("token", "")
+//        }
+        val token: String? = main_act?.GetAutUser("token")
+
+        println("onResponse token   $token")
+        val payload = "test payload"
+
+        // val okHttpClient = OkHttpClient()
+        val okHttpClient = UnsafeOkHttpClient.getUnsafeOkHttpClient().build()
+
+        var requestBody: RequestBody? = null
+
+        requestBody = RequestBody.create(
+            "application/json; charset=utf-8".toMediaType(),
+            jsonObject.toString()
+        )
+        //requestBody =payload.toRequestBody()
+
+
+        val request = Request.Builder()
+            .header("Authorization", token.toString())
+            //.header("Authorization", "Bearer 5|HF0ERRIE1fgVXKes5AYC7WOUEK9y2ieDJeBIGwBD")
+            .method("POST", requestBody)
+            .url(url_Server)
+            .build()
+        okHttpClient.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+
+//                (requireActivity() as MainActivity)!!.runOnUiThread {
+//                    (requireActivity() as MainActivity).dialogLoading?.dismiss()
+//                    Toast.makeText(
+//                        (requireActivity() as MainActivity),
+//                        "The server encountered a problem",
+//                        Toast.LENGTH_SHORT
+//                    ).show()
+//                }
+
+                // Handle this
+                println("onFailure : $e")
+
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+//                (requireActivity() as MainActivity).dialogLoading?.dismiss()
+                // Handle this
+                response.use {
+                    // if (!response.isSuccessful) throw IOException("Unexpected code $response")
+                    if (!response.isSuccessful) {
+                        //  val jsonData: String = response.body!!.string()
+                        //   val Jobject = JSONObject(jsonData)
+//                        (requireActivity() as MainActivity)!!.runOnUiThread {
+//                            Toast.makeText(
+//                                (requireActivity() as MainActivity),
+//                                Jobject.getString("message"),
+//                                Toast.LENGTH_SHORT
+//                            ).show()
+//                        }
+                        throw IOException("Unexpected code $response")
+                    }
+                    /*  for ((name, value) in response.headers) {
+                          println("$name: $value")
+                      }*/
+
+                    try {
+
+                        val jsonData: String = response.body!!.string()
+                        println("onResponse111222   $jsonData")
+
+
+                    } catch (e: Exception) {
+                        println("onResponse Exception  $e")
+                        //Toast.makeText(requireActivity(), "aaaaa", Toast.LENGTH_LONG).show()
+//                        activity!!.runOnUiThread {
+//                            Toast.makeText(
+//                                activity,
+//                                "The server encountered a problem",
+//                                Toast.LENGTH_SHORT
+//                            ).show()
+//                        }
+                    }
+
+
+//                            for ((name, value) in response.headers) {
+//                                println("$name: $value")
+//                            }
+//                            println("onResponse   "+response.body!!.string())
+
+                }
+
+            }
+        })
+    }
+
+    fun isInternetAvailable1(context: Context): String {
+        var result = "false"
+        val connectivityManager =
+            context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val networkCapabilities = connectivityManager.activeNetwork ?: return "null"
+            val actNw =
+                connectivityManager.getNetworkCapabilities(networkCapabilities) ?: return "null"
+            result = when {
+                actNw.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "WIFI"
+                actNw.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "CELLULAR"
+                actNw.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "ETHERNET"
+                else -> "false"
+            }
+        } else {
+            connectivityManager.run {
+                connectivityManager.activeNetworkInfo?.run {
+                    result = when (type) {
+                        ConnectivityManager.TYPE_WIFI -> "WIFI"
+                        ConnectivityManager.TYPE_MOBILE -> "CELLULAR"
+                        ConnectivityManager.TYPE_ETHERNET -> "ETHERNET"
+                        else -> "null"
+                    }
+
+                }
+            }
+        }
+
+        return result
+    }
+
+
+    private fun setSpecificationsHologateToServer() {
+        // (requireActivity() as MainActivity).dialogLoading?.show()
+        try {
+            val pInfo = requireContext().packageManager.getPackageInfo(
+                requireContext().packageName, 0
+            )
+            val version = pInfo.versionName
+            //  val name = pInfo
+            println("version #####  " + version)
+
+        } catch (e: PackageManager.NameNotFoundException) {
+            e.printStackTrace()
+        }
+        var token: String? = try {
+            (requireActivity() as MainActivity).GetAutUser("token")
+
+        } catch (e: Exception) {
+            (requireActivity() as SwitchActivity).GetAutUser("token")
+        }
+        val entities = ArrayList<AbstractBean>()
+        val payload = "test payload"
+
+        //   val okHttpClient = OkHttpClient()
+        val okHttpClient = UnsafeOkHttpClient.getUnsafeOkHttpClient().build()
+
+        val jsonObject = JSONObject()
+        try {
+            jsonObject.put("token_fb", ThemedActivity.GlobalStuff.token_fb)
+            jsonObject.put("version", ThemedActivity.GlobalStuff.token_fb)
+        } catch (e: JSONException) {
+            e.printStackTrace()
+        }
+        val requestBody = RequestBody.create(
+            "application/json; charset=utf-8".toMediaType(),
+            jsonObject.toString()
+        )
+
+        //  val requestBody = payload.toRequestBody()
+        val request = Request.Builder()
+            .header("Authorization", token.toString())
+            //.header("Authorization", "Bearer 5|HF0ERRIE1fgVXKes5AYC7WOUEK9y2ieDJeBIGwBD")
+            .method("POST", requestBody)
+            .url(ThemedActivity.GlobalStuff.base_url + "/api/specifications")
+            .build()
+        okHttpClient.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+
+                println("onFailure : $e")
+
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                // Handle this
+                response.use {
+
+                    println("Response : $response")
+
+
+                }
+
+            }
+        })
+    }
+
+//    fun getInstallerPackageName(context: Context, packageName: String): String? {
+//        kotlin.runCatching {
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+//                return context.packageManager.getInstallSourceInfo(packageName).installingPackageName
+//            @Suppress("DEPRECATION")
+//            return context.packageManager.getInstallerPackageName(packageName)
+//        }
+//        return null
+//    }
 }

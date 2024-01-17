@@ -1,7 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name" translatable="false">NekoBox</string>
-    <string name="app_name_long" translatable="false">NekoBox for Android</string>
+    <string name="default_notification_channel_id">1</string>
+    <string name="auto_get_list_hologate">Automatically receive the HoloGate list</string>
+    <string name="connection_information">Enter your connection information</string>
+    <string name="login_account">Login to account</string>
+
+    <string name="action_add_profile_hologate">Manual Hologate</string>
+    <string name="action_add_profile_ssh">Manual SSH</string>
+    <string name="language">language</string>
+    <string name="persian">فارسی</string>
+    <string name="english">english</string>
+    <string name="_value" translatable="false">%1$s</string>
+    <string name="day">day</string>
+    <string name="login">login</string>
+    <string name="getListHologate">get List Hologate</string>
+    <string name="exit">exit</string>
+    <string name="register">Register now</string>
+    <string name="instagram">Instagram</string>
+    <string name="free_account">free account</string>
+    <string name="free_account_message">Do you want to receive a one-day trial of Hellogate?</string>
+    <string name="free_account_message_error">You cannot get a one-day trial of Hellogate</string>
+
+    <string name="description_logout">You have successfully logged out</string>
+    <string name="app_name" translatable="false">HoloGate</string>
+    <string name="app_name_long" translatable="false">HoloGate for Android</string>
+
     <string name="app_desc">The universal proxy toolchain for Android, written in Kotlin.</string>
     <string name="project">Project</string>
     <string name="github">Source code</string>
@@ -250,7 +273,7 @@
     <string name="profile_config">Profile config</string>
     <string name="delete">Remove</string>
     <string name="delete_confirm_prompt">Are you sure you want to remove this profile?</string>
-    <string name="share_qr_nfc">QR code</string>
+    <string name="share_qr_nfc">QR code HoloGage</string>
     <string name="add_profile_methods_scan_qr_code">Scan QR code</string>
     <string name="add_profile_methods_manual_settings">Manual Settings</string>
     <plurals name="removed">

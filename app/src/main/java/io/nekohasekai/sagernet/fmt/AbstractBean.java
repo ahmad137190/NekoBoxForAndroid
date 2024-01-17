@@ -18,6 +18,7 @@ public abstract class AbstractBean extends Serializable {
     public Integer serverPort;
 
     public String name;
+    public String expireDate="";
 
     //
 
@@ -67,6 +68,7 @@ public abstract class AbstractBean extends Serializable {
             serverPort = 1080;
         }
         if (name == null) name = "";
+        if (expireDate == null) expireDate = "";
 
         finalAddress = serverAddress;
         finalPort = serverPort;
@@ -86,6 +88,8 @@ public abstract class AbstractBean extends Serializable {
         if (!serializeWithoutName) {
             output.writeString(name);
         }
+        output.writeString(expireDate);
+
         output.writeString(customOutboundJson);
         output.writeString(customConfigJson);
     }
@@ -97,6 +101,8 @@ public abstract class AbstractBean extends Serializable {
         int extraVersion = input.readInt();
 
         name = input.readString();
+        expireDate = input.readString();
+
         customOutboundJson = input.readString();
         customConfigJson = input.readString();
     }

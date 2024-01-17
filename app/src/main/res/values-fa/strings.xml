@@ -1,5 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="auto_get_list_hologate">بصورت خودکار لیست هلوگیت دریافت شود</string>
+    <string name="connection_information">اطلاعات کانکشن خود را وارد کنید</string>
+
+    <string name="action_add_profile_hologate">هلوگیت دستی</string>
+    <string name="action_add_profile_ssh">SSH دستی</string>
+
+    <string name="login_account">ورود به حساب کاربری</string>
+
+    <string name="day">روز</string>
+    <string name="language">زبان</string>
+    <string name="persian">فارسی</string>
+    <string name="English">انگلیسی</string>
+
+    <string name="getListHologate">گرفتن لیست هلوگیت</string>
+    <string name="login">ورود</string>
+    <string name="exit">خروج</string>
+    <string name="register">ثبت نام</string>
+    <string name="description_logout">شما با موفقیت خارج شدید</string>
+    <string name="free_account">اکانت رایگان</string>
+    <string name="free_account_message">آیا می خواهید تست یک روزه هلوگیت را دریافت کنید ؟</string>
+    <string name="free_account_message_error">تست یک روزه هلوگیت را نمی توانید دریافت کنید</string>
     <string name="app_desc">زنجیره ابزار پروکسی جهانی برای اندروید، نوشته شده در کاتولین.</string>
     <string name="project">پروژه</string>
     <string name="github">کد منبع</string>

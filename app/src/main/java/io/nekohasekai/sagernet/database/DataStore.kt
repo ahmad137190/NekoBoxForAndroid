@@ -10,6 +10,7 @@ import io.nekohasekai.sagernet.database.preference.PublicDatabase
 import io.nekohasekai.sagernet.database.preference.RoomPreferenceDataStore
 import io.nekohasekai.sagernet.ktx.*
 import moe.matsuri.nb4a.TempDatabase
+import android.os.Build
 
 object DataStore : OnPreferenceDataStoreChangeListener {
 
@@ -19,9 +20,14 @@ object DataStore : OnPreferenceDataStoreChangeListener {
 
     val configurationStore = RoomPreferenceDataStore(PublicDatabase.kvPairDao)
     val profileCacheStore = RoomPreferenceDataStore(TempDatabase.profileCacheDao)
-
+    var languageMode by configurationStore.string(Key.LANGUAGE_MODE) { Key.MODE_FA }
+    var showGroupInAutoGetListHoloGate by configurationStore.boolean("showGroupInAutoGetListHoloGate"){ true }
+    var directDnsUseSystem by configurationStore.boolean(Key.DIRECT_DNS_USE_SYSTEM){
+        return@boolean Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+    }
     // last used, but may not be running
     var currentProfile by configurationStore.long(Key.PROFILE_CURRENT)
+
 
     var selectedProxy by configurationStore.long(Key.PROFILE_ID)
     var selectedGroup by configurationStore.long(Key.PROFILE_GROUP) { currentGroupId() } // "ungrouped" group id = 1

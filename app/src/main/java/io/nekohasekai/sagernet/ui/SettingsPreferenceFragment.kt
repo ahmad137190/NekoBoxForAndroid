@@ -10,6 +10,7 @@ import androidx.core.app.ActivityCompat
 import androidx.preference.*
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import io.nekohasekai.sagernet.Key
+import io.nekohasekai.sagernet.MyContextWrapper
 import io.nekohasekai.sagernet.R
 import io.nekohasekai.sagernet.SagerNet
 import io.nekohasekai.sagernet.database.DataStore
@@ -71,6 +72,10 @@ class SettingsPreferenceFragment : PreferenceFragmentCompat() {
             Theme.applyNightTheme()
             true
         }
+        val languageMode = findPreference<SimpleMenuPreference>(Key.LANGUAGE_MODE)!!
+        val showGroupInAutoGetListHoloGate = findPreference<SwitchPreference>(Key.SHOW_AUTO_GET_LIST_HOLOGATE)!!
+
+
         val mixedPort = findPreference<EditTextPreference>(Key.MIXED_PORT)!!
         val serviceMode = findPreference<Preference>(Key.SERVICE_MODE)!!
         val allowAccess = findPreference<Preference>(Key.ALLOW_ACCESS)!!
@@ -96,6 +101,16 @@ class SettingsPreferenceFragment : PreferenceFragmentCompat() {
         val logLevel = findPreference<LongClickListPreference>(Key.LOG_LEVEL)!!
         val mtu = findPreference<MTUPreference>(Key.MTU)!!
 
+        showGroupInAutoGetListHoloGate.onPreferenceChangeListener = reloadListener
+
+        languageMode.setOnPreferenceChangeListener { _, lang ->
+
+            MyContextWrapper.wrap(activity, lang as String?)
+            requireActivity().apply {
+                ActivityCompat.recreate(this)
+            }
+            true
+        }
         logLevel.dialogLayoutResource = R.layout.layout_loglevel_help
         logLevel.setOnPreferenceChangeListener { _, _ ->
             needRestart()
