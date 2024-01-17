@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="update_current_subscription">اشتراک فعلی گروه را به روز کنید</string>
+    <string name="remove_duplicate">سرورهای تکراری را حذف کنید</string>
     <string name="auto_get_list_hologate">بصورت خودکار لیست هلوگیت دریافت شود</string>
     <string name="connection_information">اطلاعات کانکشن خود را وارد کنید</string>
 
